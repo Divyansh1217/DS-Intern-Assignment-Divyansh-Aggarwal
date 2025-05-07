@@ -34,9 +34,8 @@ def cleaning(df):
     # df[obj] = imputer.fit_transform(df[obj])
     from sklearn.impute import KNNImputer
 
-    imputer = KNNImputer(n_neighbors=5)
+    imputer = KNNImputer(n_neighbors=9, weights='distance', metric='nan_euclidean')
     df[obj] = imputer.fit_transform(df[obj])
-    df=df.dropna()
     def cap_outliers_iqr(df, column):
         Q1 = df[column].quantile(0.25)
         Q3 = df[column].quantile(0.75)
@@ -53,6 +52,10 @@ def cleaning(df):
 
 #Normalization/Standardization
 def normalization(df):
+    df['outdoor_humidity'] = df['outdoor_humidity']**2
+    from sklearn.preprocessing import power_transform
+    df['outdoor_humidity'] = power_transform(df[['outdoor_humidity']], method='yeo-johnson')
+
     from sklearn.preprocessing import StandardScaler
     scaler = StandardScaler()
     df[obj] = scaler.fit_transform(df[obj])
@@ -68,17 +71,17 @@ def feature_selection(df):
     from sklearn.metrics import mean_squared_error, r2_score
     from sklearn.model_selection import cross_val_score
 
-    select=SelectKBest(score_func=f_regression, k=8)
-    X = df.drop('equipment_energy_consumption', axis=1)
-    y = df['equipment_energy_consumption']
-    X_new = select.fit_transform(X, y)
-    mask = select.get_support()
-    selected_features = X.columns[mask]
+    from sklearn.decomposition import PCA
+
+    pca = PCA(n_components=12)
+    y=df['equipment_energy_consumption']
+    X=df.drop(['equipment_energy_consumption'], axis=1)
+    X_new = pca.fit_transform(X)
 
 
     x_train, x_test, y_train, y_test = train_test_split(X_new, y, test_size=0.2, random_state=42)
     # model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
-    model = XGBRegressor(n_estimators=200, max_depth=10,learning_rate=0.12, random_state=42)
+    model = XGBRegressor(n_estimators=150, max_depth=15,learning_rate=0.055,subsample=0.7, random_state=42)
     # model = Lasso(alpha=0.1, random_state=42)
 
     model.fit(x_train, y_train)
@@ -94,28 +97,29 @@ def feature_selection(df):
 
 
 
+def show_histogram():
+    df.hist(bins=30, figsize=(15, 10))
+    plt.tight_layout()
+    plt.show()
+    corr=df.corr()
+    sns.heatmap(corr, annot=True, cmap='coolwarm', fmt='.2f')
+    plt.title('Correlation Heatmap')
+    plt.show()
 
-
+    df.plot(kind='box', figsize=(15, 8), vert=False)
+    plt.title("Box-and-Whisker Plot of All Numerical Columns")
+    plt.show()
 
 
 if __name__ == "__main__":
     df=load()
     df=cleaning(df)
-    # sns.histplot(df['equipment_energy_consumption'], bins=30, kde=True)
-    # plt.title('Distribution of Equipment Energy Consumption')   
-    # plt.show()
+
     var=df.var()
     print("Variance of each column:\n", var)
-    corr=df.corr()
-    cov=df.cov()
-    # print("Correlation Matrix:\n", corr)
-    # print("Covariance Matrix:\n", cov)
-    # sns.heatmap(corr, annot=True, cmap='coolwarm', fmt='.2f')
-    # plt.title('Correlation Heatmap')
-    # plt.show()
+    
 
-    # sns.histplot(df['outdoor_temperature'], bins=30, kde=True)
-    # plt.title('Distribution of Equipment Energy Consumption')   
-    # plt.show()
     df=normalization(df)
     feature_selection(df)
+
+    show_histogram()
