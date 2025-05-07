@@ -40,3 +40,13 @@ imputer = SimpleImputer(strategy='mean')
 df[obj] = imputer.fit_transform(df[obj])
 print(df.isnull().sum())
 
+
+# Normalization/Standardization
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+df[obj] = scaler.fit_transform(df[obj])
+print(df.describe())
+
+# sns.histplot(df['equipment_energy_consumption'], bins=30, kde=True)
+# plt.title('Distribution of Equipment Energy Consumption')   
+# plt.show()
