@@ -50,3 +50,20 @@ print(df.describe())
 # sns.histplot(df['equipment_energy_consumption'], bins=30, kde=True)
 # plt.title('Distribution of Equipment Energy Consumption')   
 # plt.show()
+
+#Fearure Selection
+from sklearn.feature_selection import SelectKBest, f_regression
+from sklearn.model_selection import train_test_split
+from xgboost import XGBRegressor
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.model_selection import cross_val_score
+
+select=SelectKBest(score_func=f_regression, k=10)
+X = df.drop('equipment_energy_consumption', axis=1)
+y = df['equipment_energy_consumption']
+X_new = select.fit_transform(X, y)
+mask = select.get_support()
+selected_features = X.columns[mask]
+print("Selected features:", selected_features.tolist())
+
+
